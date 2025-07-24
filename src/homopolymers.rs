@@ -1,6 +1,5 @@
-use bio::io::fasta::{Reader, Record};
-use std::fs::File;
-use std::io::BufReader;
+use needletail::parse_fastx_file;
+use needletail::parser::SequenceRecord;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -42,7 +41,7 @@ fn valid_homopolymer(i: usize, j: usize, nt: &u8, min_hp_len: usize, strict: boo
 }
 
 #[inline]
-pub fn find_homopolymers_in_record<'a>(record: &'a Record, min_hp_len: usize, strict: bool) {
+pub fn find_homopolymers_in_record(record: &SequenceRecord, min_hp_len: usize, strict: bool) {
     // Extract sequence information.
     let seq_name = record.id();
     let seq = record.seq();
@@ -65,7 +64,7 @@ pub fn find_homopolymers_in_record<'a>(record: &'a Record, min_hp_len: usize, st
         if valid_homopolymer(i, j, &seq[i], min_hp_len, strict) {
             println!(
                 "{}\t{}\t{}\t{}\t{}",
-                seq_name,
+                std::str::from_utf8(seq_name).unwrap(),
                 i,
                 j,
                 j - i,
@@ -81,13 +80,7 @@ pub fn find_homopolymers_in_record<'a>(record: &'a Record, min_hp_len: usize, st
 pub fn find_homopolymers_in_fasta(fasta: &PathBuf, min_hp_len: usize, strict: bool) {
     let f_path = check_fasta(fasta);
 
-    // Extract args.
-    let fasta_file = File::open(f_path).unwrap();
-
-    // Read fasta.
-    let bufreader = BufReader::new(fasta_file);
-    let reader = Reader::from_bufread(bufreader);
-    let mut records = reader.records();
+    let mut reader = parse_fastx_file(&f_path).unwrap();
 
     //
     println!("{}\t{}\t{}\t{}\t{}", "contig", "start", "end", "len", "nt");
@@ -95,7 +88,7 @@ pub fn find_homopolymers_in_fasta(fasta: &PathBuf, min_hp_len: usize, strict: bo
     // This is actually not ideal because the loop will terminate prematurely
     // without an error if a faulty record is seen.
     // A better alternative is to loop over all records and call .unwrap().
-    while let Some(record) = records.next() {
+    while let Some(record) = reader.next() {
         let record = record.unwrap();
         find_homopolymers_in_record(&record, min_hp_len, strict);
     }

@@ -4,5 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bio = { version = "2.2.0" }
+needletail = { version = "0.6.3" }
 clap = { version = "4.5.37", features = ["derive"] }
+rayon = { version = "1.10.0" }
+rstest = { version = "0.25.0" }
