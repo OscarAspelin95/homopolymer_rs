@@ -82,14 +82,13 @@ pub fn find_homopolymers_in_fasta(fasta: &PathBuf, min_hp_len: usize, strict: bo
 
     let mut reader = parse_fastx_file(&f_path).unwrap();
 
-    //
+    // TSV header.
     println!("{}\t{}\t{}\t{}\t{}", "contig", "start", "end", "len", "nt");
 
-    // This is actually not ideal because the loop will terminate prematurely
-    // without an error if a faulty record is seen.
-    // A better alternative is to loop over all records and call .unwrap().
     while let Some(record) = reader.next() {
-        let record = record.unwrap();
-        find_homopolymers_in_record(&record, min_hp_len, strict);
+        match record {
+            Ok(record) => find_homopolymers_in_record(&record, min_hp_len, strict),
+            Err(_) => {}
+        }
     }
 }
