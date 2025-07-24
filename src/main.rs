@@ -16,7 +16,7 @@ struct CommandArgs {
     strict: bool,
 }
 
-/// TODO - add tests.
+/// TODO - output file.
 fn main() {
     let args: CommandArgs = CommandArgs::parse();
 
