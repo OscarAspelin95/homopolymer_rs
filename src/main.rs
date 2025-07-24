@@ -1,11 +1,10 @@
 use clap::Parser;
 use std::path::PathBuf;
-
 mod homopolymers;
-use homopolymers::print_homopolymers_in_fasta;
+use homopolymers::find_homopolymers_in_fasta;
 
 #[derive(Parser, Debug)]
-#[command(long_about = "Finds homopolymers in fasta files.")]
+#[command(long_about = "Finds homopolymers in the forward strand of fasta entries.")]
 struct CommandArgs {
     #[arg(short, long)]
     fasta: PathBuf,
@@ -17,11 +16,9 @@ struct CommandArgs {
     strict: bool,
 }
 
-/// TODO - add .gz support.
-/// TODO - (possibly) add rayon multithreading (either per record or per fasta file).
-/// TODO - add a "--strict" mode to only allow/print unambiguous nucleotides ATCGatcg.
+/// TODO - add tests.
 fn main() {
     let args: CommandArgs = CommandArgs::parse();
 
-    print_homopolymers_in_fasta(&args.fasta, args.min_hp_length as usize, args.strict);
+    find_homopolymers_in_fasta(&args.fasta, args.min_hp_length as usize, args.strict);
 }
