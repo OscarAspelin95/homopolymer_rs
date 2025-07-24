@@ -1,8 +1,13 @@
+use log;
+use log::info;
+use log::warn;
 use needletail::parse_fastx_file;
 use needletail::parser::SequenceRecord;
+use std::fs::File;
+use std::io::BufWriter;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
-
 /// Ensure we have the proper file ending.
 fn check_fasta(fasta: &PathBuf) -> &Path {
     let f_path = Path::new(fasta);
@@ -41,7 +46,12 @@ fn valid_homopolymer(i: usize, j: usize, nt: &u8, min_hp_len: usize, strict: boo
 }
 
 #[inline]
-pub fn find_homopolymers_in_record(record: &SequenceRecord, min_hp_len: usize, strict: bool) {
+pub fn find_homopolymers_in_record(
+    record: &SequenceRecord,
+    min_hp_len: usize,
+    strict: bool,
+    bufwriter: &mut BufWriter<&File>,
+) {
     // Extract sequence information.
     let seq_name = record.id();
     let seq = record.seq();
@@ -49,6 +59,10 @@ pub fn find_homopolymers_in_record(record: &SequenceRecord, min_hp_len: usize, s
 
     // Skip sequence if shorter than hp len.
     if seq_len < min_hp_len {
+        warn!(
+            "Skipping record {} (too short)",
+            std::str::from_utf8(seq_name).unwrap()
+        );
         return;
     }
 
@@ -62,14 +76,16 @@ pub fn find_homopolymers_in_record(record: &SequenceRecord, min_hp_len: usize, s
 
         // We have a homopolymer of required length.
         if valid_homopolymer(i, j, &seq[i], min_hp_len, strict) {
-            println!(
-                "{}\t{}\t{}\t{}\t{}",
+            let s = format!(
+                "{}\t{}\t{}\t{}\t{}\n",
                 std::str::from_utf8(seq_name).unwrap(),
                 i,
                 j,
                 j - i,
                 char::from(seq[i])
             );
+
+            bufwriter.write_all(s.as_bytes()).unwrap();
         }
 
         i = j;
@@ -77,18 +93,35 @@ pub fn find_homopolymers_in_record(record: &SequenceRecord, min_hp_len: usize, s
     }
 }
 
-pub fn find_homopolymers_in_fasta(fasta: &PathBuf, min_hp_len: usize, strict: bool) {
+pub fn find_homopolymers_in_fasta(
+    fasta: &PathBuf,
+    min_hp_len: usize,
+    strict: bool,
+    outfile: &PathBuf,
+) {
     let f_path = check_fasta(fasta);
 
+    // fast(a/q) reader.
     let mut reader = parse_fastx_file(&f_path).unwrap();
 
-    // TSV header.
-    println!("{}\t{}\t{}\t{}\t{}", "contig", "start", "end", "len", "nt");
+    // Output file writer.
+    let writer = File::create(outfile).expect("Failed to create output file.");
+    let mut bufwriter = BufWriter::new(&writer);
 
+    // Write tsv header.
+    let s = format!(
+        "{}\t{}\t{}\t{}\t{}\n",
+        "contig", "start", "end", "len", "nt"
+    );
+    bufwriter.write_all(s.as_bytes()).unwrap();
+
+    info!("Finding homopolymers...");
     while let Some(record) = reader.next() {
         match record {
-            Ok(record) => find_homopolymers_in_record(&record, min_hp_len, strict),
-            Err(_) => {}
+            Ok(record) => find_homopolymers_in_record(&record, min_hp_len, strict, &mut bufwriter),
+            Err(e) => {
+                warn!("Failed to parse record: {:?}", e);
+            }
         }
     }
 }
