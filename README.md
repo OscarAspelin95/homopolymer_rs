@@ -1,2 +1,2 @@
 # homopolymer_rs
-Very basic implementation of a homopolymer counter for fasta files.
+Blazingly fast homopolymer counter for fasta files.
