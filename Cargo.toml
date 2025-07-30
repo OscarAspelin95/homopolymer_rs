@@ -1,6 +1,6 @@
 [package]
-name = "find_homopolymers"
-version = "0.1.0"
+name = "homopolymer_rs"
+version = "0.0.1"
 edition = "2024"
 
 [dependencies]
