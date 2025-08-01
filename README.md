@@ -1,3 +1,5 @@
+⚠️ Depreciated since it is now part of [fasta_rs](https://github.com/OscarAspelin95/fasta_rs).
+
 # homopolymer_rs
 Blazingly fast homopolymer counter for fasta files.
 
